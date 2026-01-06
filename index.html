@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Countdown Lễ Tết Việt Nam</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">⏳</div>
+        <div class="brand-text">
+          <h1>COUNTDOWN DH.WYXC</h1>
+          <p class="subtitle">dh.wyxc</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="btnAdd" class="btn primary">+ Thêm sự kiện</button>
+        <div class="field">
+          <label class="sr-only" for="presetSelect">Thêm nhanh</label>
+          <select id="presetSelect">
+            <option value="">Thêm nhanh ngày lễ…</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="toolbar" aria-label="Thanh công cụ">
+        <div class="toolbar-left">
+          <div class="field search">
+            <label class="sr-only" for="searchInput">Tìm kiếm</label>
+            <input id="searchInput" type="search" placeholder="Tìm theo tên sự kiện…" />
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <button id="btnExport" class="btn ghost">Xuất JSON</button>
+          <button id="btnImport" class="btn ghost">Nhập JSON</button>
+          <input type="file" id="fileInput" accept="application/json" hidden>
+        </div>
+      </section>
+
+      <section id="list" class="grid" aria-live="polite">
+        <!-- cards injected here -->
+      </section>
+
+      <footer class="footer">
+        <p class="note">
+          Lưu ý: Những ngày theo <b>âm lịch</b> (Tết Nguyên Đán, Giỗ Tổ Hùng Vương...) cần chọn ngày <b>dương lịch tương ứng</b> cho năm bạn muốn đếm ngược.
+        </p>
+        <p class="hint">
+          Mẹo: bạn có thể xuất/nhập JSON để backup hoặc chuyển danh sách qua thiết bị khác.
+        </p>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Add / Edit Modal -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-backdrop" data-close="1"></div>
+
+    <div class="modal-sheet" role="document">
+      <div class="modal-header">
+        <h2 id="modalTitle">Thêm / Sửa sự kiện</h2>
+        <button class="icon-btn" id="xBtn" aria-label="Đóng">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="field">
+          <label for="evName">Tên sự kiện</label>
+          <input id="evName" placeholder="Ví dụ: Tết Nguyên Đán">
+        </div>
+
+        <div class="field">
+          <label for="evDate">Ngày & giờ (dương lịch)</label>
+          <input id="evDate" type="datetime-local">
+          <div class="help">Chọn đúng ngày dương lịch (ví dụ 2026-02-...)</div>
+        </div>
+
+        <label class="check">
+          <input id="evYearly" type="checkbox">
+          <span>Lặp lại hàng năm</span>
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button id="saveBtn" class="btn primary">Lưu</button>
+        <button id="cancelBtn" class="btn ghost">Hủy</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
