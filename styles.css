@@ -397,3 +397,104 @@ h1{
 @media (prefers-reduced-motion: reduce){
   .btn{transition:none}
 }
+
+
+  /* Fullscreen card zoom (mobile-friendly) */
+  body.zoom-open { overflow: hidden; }
+
+  .zoom{
+    position: fixed; inset: 0; z-index: 80;
+    display: grid; place-items: center;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+  .zoom.hidden{ display:none; }
+
+  .zoom-backdrop{
+    position:absolute; inset:0;
+    background: rgba(0,0,0,.68);
+  }
+
+  .zoom-sheet{
+    position: relative;
+    width: min(980px, 100%);
+    height: min(820px, 100%);
+    background: var(--sheet-bg, rgba(10,14,24,.96)); /* fallback nếu CSS ngoài chưa có --sheet-bg */
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 18px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .zoom-top{
+    position: sticky; top: 0;
+    display:flex; justify-content:space-between; align-items:center;
+    gap: 10px;
+    padding: 14px 14px 10px;
+    background: inherit;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,.12);
+  }
+  .zoom-title{
+    font-weight: 900;
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+  .zoom-meta{
+    color: rgba(255,255,255,.72);
+    font-size: .98rem;
+    margin-top: 4px;
+  }
+
+  .zoom-body{
+    padding: 14px;
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+    height: 80%;
+  }
+
+.countdown.zoom-countdown{
+  flex: 1 1 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+  /* Phóng to countdown + cho phép kéo ngang nếu màn hình hẹp */
+  .zoom-countdown{
+    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x mandatory;
+  }
+  .zoom-countdown .cd-box{
+    flex: 0 0 auto;
+    min-width: 92px;
+    padding: 14px 14px;
+    scroll-snap-align: center;
+  }
+  .zoom-countdown .cd-num{
+    font-size: clamp(5rem, 10vw, 9rem);
+  }
+
+  .zoom-note{
+    color: rgba(255,255,255,.62);
+    line-height: 1.45;
+  }
+  .zoom-hint{
+    color: rgba(255,255,255,.55);
+    font-size: .92rem;
+  }
+
+  /* Mobile: full screen */
+  @media (max-width: 760px){
+    .zoom{ padding: 0; place-items: stretch; }
+    .zoom-sheet{ width: 100%; height: 100%; border-radius: 0; }
+  }
+
+  /* Landscape phone: to hơn nữa */
+  @media (orientation: landscape) and (max-width: 980px){
+    .zoom-body{ padding: 16px; }
+    .zoom-countdown .cd-box{ min-width: 130px; font-size: clamp(2.4rem, 8vw, 5rem);  }
+    .zoom-title{ font-size: 1.15rem; }
+  }

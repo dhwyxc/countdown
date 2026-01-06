@@ -1,4 +1,86 @@
 // script.js - countdown logic + responsive UI
+(() => {
+  const list = document.getElementById('list');
+  const editModal = document.getElementById('modal');
+
+  const zoom = document.getElementById('zoom');
+  const zoomTitle = document.getElementById('zoomTitle');
+  const zoomMeta = document.getElementById('zoomMeta');
+  const zoomCountdown = document.getElementById('zoomCountdown');
+  const zoomNote = document.getElementById('zoomNote');
+  const zoomClose = document.getElementById('zoomClose');
+
+  let currentId = null;
+  let syncTimer = null;
+
+  function openZoomFromCard(card) {
+    // Không mở zoom khi đang mở modal Add/Edit
+    if (editModal && !editModal.classList.contains('hidden')) return;
+
+    // Không mở zoom nếu bấm vào nút Sửa/Xóa, input...
+    // (đã chặn ở handler click, vẫn giữ thêm lớp bảo vệ)
+    const titleEl = card.querySelector('.card-title, h3');
+    const metaEl  = card.querySelector('.card-meta .date, .meta .small');
+    const noteEl  = card.querySelector('.help');
+
+    // Lấy id countdown: id="t_<eventId>"
+    const srcCountdown = card.querySelector('[id^="t_"]');
+    currentId = srcCountdown?.id?.startsWith('t_') ? srcCountdown.id.slice(2) : null;
+
+    zoomTitle.textContent = titleEl ? titleEl.textContent.trim() : 'Sự kiện';
+    zoomMeta.textContent  = metaEl  ? metaEl.textContent.trim()  : '';
+
+    if (noteEl && noteEl.textContent.trim()) {
+      zoomNote.textContent = noteEl.textContent.trim();
+      zoomNote.style.display = 'block';
+    } else {
+      zoomNote.style.display = 'none';
+    }
+
+    zoom.classList.remove('hidden');
+    document.body.classList.add('zoom-open');
+
+    syncCountdown();
+    if (syncTimer) clearInterval(syncTimer);
+    syncTimer = setInterval(syncCountdown, 500);
+
+    zoomClose?.focus();
+  }
+
+  function syncCountdown() {
+    if (!currentId) { zoomCountdown.innerHTML = ''; return; }
+    const src = document.getElementById('t_' + currentId);
+    if (src) zoomCountdown.innerHTML = src.innerHTML; // luôn khớp với countdown đang chạy
+  }
+
+  function closeZoom() {
+    zoom.classList.add('hidden');
+    document.body.classList.remove('zoom-open');
+    currentId = null;
+    zoomCountdown.innerHTML = '';
+    if (syncTimer) { clearInterval(syncTimer); syncTimer = null; }
+  }
+
+  // Tap bất kỳ card nào để phóng to
+  list?.addEventListener('click', (e) => {
+    // Không kích hoạt khi click vào các nút hành động/inputs
+    if (e.target.closest('button, a, input, select, textarea, .link-btn, .btn')) return;
+
+    const card = e.target.closest('.card');
+    if (!card) return;
+    openZoomFromCard(card);
+  });
+
+  zoomClose?.addEventListener('click', closeZoom);
+  zoom?.querySelector('.zoom-backdrop')?.addEventListener('click', closeZoom);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !zoom.classList.contains('hidden')) closeZoom();
+  });
+
+  // Xoay ngang: sync lại cho chắc (iOS đôi khi cần)
+  window.addEventListener('orientationchange', () => setTimeout(syncCountdown, 250));
+})();
 
 const DEFAULT_EVENTS = [
   { id: 'ny', name: "Tết Nguyên Đán (hãy nhập ngày dương lịch)", date: "", yearly: true, note: "Ngày theo âm lịch — hãy nhập ngày dương lịch chính xác cho năm bạn cần." },

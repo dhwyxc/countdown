@@ -100,7 +100,28 @@
       </div>
     </div>
   </div>
+<!-- Card Zoom (tap card to fullscreen) -->
+<div id="zoom" class="zoom hidden" role="dialog" aria-modal="true" aria-label="Xem lớn">
+  <div class="zoom-backdrop" data-zoom-close="1"></div>
+
+  <div class="zoom-sheet" role="document">
+    <div class="zoom-top">
+      <div>
+        <div class="zoom-title" id="zoomTitle">Sự kiện</div>
+        <div class="zoom-meta" id="zoomMeta"></div>
+      </div>
+      <button class="icon-btn" id="zoomClose" aria-label="Đóng">✕</button>
+    </div>
+
+    <div class="zoom-body">
+      <div class="countdown zoom-countdown" id="zoomCountdown"></div>
+      <div class="zoom-note" id="zoomNote" style="display:none"></div>
+      <div class="zoom-hint"></div>
+    </div>
+  </div>
+</div>
 
   <script src="script.js"></script>
+
 </body>
 </html>
