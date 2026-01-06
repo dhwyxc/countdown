@@ -315,13 +315,31 @@ function pad(n){ return String(n).padStart(2,'0'); }
 function startTimer(){
   if (intervalRef) clearInterval(intervalRef);
 
-  intervalRef = setInterval(()=>{
-    events.forEach(ev=>{
-      const el = document.getElementById('t_'+ev.id);
-      if (!el) return;
-      const parts = getCountdownParts(getCountdownTarget(ev).getTime() - Date.now());
-      el.innerHTML = renderCountdownHTML(parts);
-    });
+  intervalRef = setInterval(() => {
+    const now = Date.now();
+
+    for (const ev of events) {
+      try {
+        const el = document.getElementById('t_' + ev.id);
+
+        // QUAN TRỌNG: thiếu element thì bỏ qua event đó, KHÔNG return
+        if (!el) continue;
+
+        const parts = getCountdownParts(getCountdownTarget(ev).getTime() - now);
+        el.innerHTML = renderCountdownHTML(parts);
+
+        // an toàn: chỉ gọi nếu Effects tồn tại
+        if (window.Effects && typeof window.Effects.maybeCelebrate === "function") {
+          window.Effects.maybeCelebrate(ev, now, {
+            soundUrl: "assets/sfx/celebrate.wav",
+            volume: 0.9
+          });
+        }
+      } catch (err) {
+        console.warn("Update countdown error:", ev?.name, err);
+        // không làm gì thêm để các card khác vẫn chạy
+      }
+    }
   }, 1000);
 }
 
