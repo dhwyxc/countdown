@@ -20,15 +20,15 @@
     // Không mở zoom nếu bấm vào nút Sửa/Xóa, input...
     // (đã chặn ở handler click, vẫn giữ thêm lớp bảo vệ)
     const titleEl = card.querySelector('.card-title, h3');
-    const metaEl  = card.querySelector('.card-meta .date, .meta .small');
-    const noteEl  = card.querySelector('.help');
+    const metaEl = card.querySelector('.card-meta .date, .meta .small');
+    const noteEl = card.querySelector('.help');
 
     // Lấy id countdown: id="t_<eventId>"
     const srcCountdown = card.querySelector('[id^="t_"]');
     currentId = srcCountdown?.id?.startsWith('t_') ? srcCountdown.id.slice(2) : null;
 
     zoomTitle.textContent = titleEl ? titleEl.textContent.trim() : 'Sự kiện';
-    zoomMeta.textContent  = metaEl  ? metaEl.textContent.trim()  : '';
+    zoomMeta.textContent = metaEl ? metaEl.textContent.trim() : '';
 
     if (noteEl && noteEl.textContent.trim()) {
       zoomNote.textContent = noteEl.textContent.trim();
@@ -107,7 +107,7 @@ function load() {
       else events = DEFAULT_EVENTS;
       save();
     }
-  } catch(e){ events = DEFAULT_EVENTS; save(); }
+  } catch (e) { events = DEFAULT_EVENTS; save(); }
 
   ensureIds();
   populatePreset();
@@ -116,85 +116,85 @@ function load() {
   startTimer();
 }
 
-function ensureIds(){
-  events.forEach((e, idx)=>{ if (!e.id) e.id = 'ev_' + Date.now() + '_' + idx; });
+function ensureIds() {
+  events.forEach((e, idx) => { if (!e.id) e.id = 'ev_' + Date.now() + '_' + idx; });
 }
 
 function save() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
 }
 
-function attachUI(){
-  document.getElementById('btnAdd').addEventListener('click', ()=>openModal({}));
+function attachUI() {
+  document.getElementById('btnAdd').addEventListener('click', () => openModal({}));
   document.getElementById('cancelBtn').addEventListener('click', closeModal);
   document.getElementById('saveBtn').addEventListener('click', saveFromModal);
   document.getElementById('btnExport').addEventListener('click', exportJSON);
-  document.getElementById('btnImport').addEventListener('click', ()=>document.getElementById('fileInput').click());
-  document.getElementById('fileInput').addEventListener('change', (e)=>{ if (e.target.files.length) importJSONFile(e.target.files[0]); });
+  document.getElementById('btnImport').addEventListener('click', () => document.getElementById('fileInput').click());
+  document.getElementById('fileInput').addEventListener('change', (e) => { if (e.target.files.length) importJSONFile(e.target.files[0]); });
 
   document.getElementById('xBtn').addEventListener('click', closeModal);
   document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
 
   const search = document.getElementById('searchInput');
-  search.addEventListener('input', ()=>{
+  search.addEventListener('input', () => {
     searchTerm = (search.value || '').trim().toLowerCase();
     renderAll();
   });
 
-  document.addEventListener('keydown', (e)=>{
+  document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeModal();
   });
 }
 
-function populatePreset(){
+function populatePreset() {
   const sel = document.getElementById('presetSelect');
   sel.innerHTML = '<option value="">Thêm nhanh ngày lễ…</option>';
 
   const presets = [
-    {name: 'Tết Nguyên Đán (nhập ngày dương lịch)', date: ''},
-    {name: 'Tết Dương Lịch — 01/01', date: '01-01'},
-    {name: 'Quốc tế Phụ nữ — 08/03', date: '03-08'},
-    {name: '30/4 — Giải phóng', date: '04-30'},
-    {name: '01/05 — Lao động', date: '05-01'},
-    {name: '02/09 — Quốc khánh', date: '09-02'}
+    { name: 'Tết Nguyên Đán (nhập ngày dương lịch)', date: '' },
+    { name: 'Tết Dương Lịch — 01/01', date: '01-01' },
+    { name: 'Quốc tế Phụ nữ — 08/03', date: '03-08' },
+    { name: '30/4 — Giải phóng', date: '04-30' },
+    { name: '01/05 — Lao động', date: '05-01' },
+    { name: '02/09 — Quốc khánh', date: '09-02' }
   ];
 
-  presets.forEach(p=>{
+  presets.forEach(p => {
     const o = document.createElement('option');
     o.value = p.date;
     o.textContent = p.name;
     sel.appendChild(o);
   });
 
-  sel.onchange = ()=>{
+  sel.onchange = () => {
     const val = sel.value;
     if (!val) return;
 
-    if (val.length===5){
+    if (val.length === 5) {
       const now = new Date();
-      const next = new Date(now.getFullYear(), parseInt(val.slice(0,2))-1, parseInt(val.slice(3,5)), 0,0,0);
-      if (next <= now) next.setFullYear(next.getFullYear()+1);
-      openModal({name: sel.options[sel.selectedIndex].text, date: toLocalInput(next), yearly: true});
+      const next = new Date(now.getFullYear(), parseInt(val.slice(0, 2)) - 1, parseInt(val.slice(3, 5)), 0, 0, 0);
+      if (next <= now) next.setFullYear(next.getFullYear() + 1);
+      openModal({ name: sel.options[sel.selectedIndex].text, date: toLocalInput(next), yearly: true });
     } else {
-      openModal({name: 'Tết Nguyên Đán (nhập ngày dương lịch)', date: '', yearly: true});
+      openModal({ name: 'Tết Nguyên Đán (nhập ngày dương lịch)', date: '', yearly: true });
     }
 
     sel.selectedIndex = 0;
   };
 }
 
-function renderAll(){
+function renderAll() {
   const list = document.getElementById('list');
   list.innerHTML = '';
 
-  const filtered = events.filter(ev=>{
+  const filtered = events.filter(ev => {
     if (!searchTerm) return true;
     return (ev.name || '').toLowerCase().includes(searchTerm);
   });
 
-  filtered.sort((a,b)=> getCountdownTarget(a).getTime() - getCountdownTarget(b).getTime());
+  filtered.sort((a, b) => getCountdownTarget(a).getTime() - getCountdownTarget(b).getTime());
 
-  filtered.forEach(ev=>{
+  filtered.forEach(ev => {
     const card = document.createElement('article');
     card.className = 'card';
 
@@ -214,13 +214,13 @@ function renderAll(){
 
     const countdown = document.createElement('div');
     countdown.className = 'countdown';
-    countdown.id = 't_'+ev.id;
+    countdown.id = 't_' + ev.id;
     countdown.innerHTML = renderCountdownHTML(getCountdownParts(getCountdownTarget(ev).getTime() - Date.now()));
 
     card.appendChild(head);
     card.appendChild(countdown);
 
-    if (ev.note){
+    if (ev.note) {
       const note = document.createElement('div');
       note.className = 'help';
       note.textContent = ev.note;
@@ -243,12 +243,12 @@ function renderAll(){
     const edit = document.createElement('button');
     edit.className = 'link-btn';
     edit.textContent = 'Sửa';
-    edit.onclick = ()=> editEvent(ev.id);
+    edit.onclick = () => editEvent(ev.id);
 
     const del = document.createElement('button');
     del.className = 'link-btn danger';
     del.textContent = 'Xóa';
-    del.onclick = ()=> removeEvent(ev.id);
+    del.onclick = () => removeEvent(ev.id);
 
     actions.appendChild(edit);
     actions.appendChild(del);
@@ -260,7 +260,7 @@ function renderAll(){
     list.appendChild(card);
   });
 
-  if (filtered.length === 0){
+  if (filtered.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'card';
     empty.innerHTML = `
@@ -274,24 +274,24 @@ function renderAll(){
   }
 }
 
-function getCountdownTarget(ev){
-  if (!ev.date) return new Date(Date.now()+1000*60*60*24*365);
+function getCountdownTarget(ev) {
+  if (!ev.date) return new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
   const d = new Date(ev.date);
 
-  if (ev.yearly){
+  if (ev.yearly) {
     const now = new Date();
     const candidate = new Date(d);
     candidate.setFullYear(now.getFullYear());
-    if (candidate <= now) candidate.setFullYear(now.getFullYear()+1);
+    if (candidate <= now) candidate.setFullYear(now.getFullYear() + 1);
     return candidate;
   }
   return d;
 }
 
-function getCountdownParts(ms){
+function getCountdownParts(ms) {
   if (ms <= 0) return { state: 'live' };
 
-  const sec = Math.floor(ms/1000);
+  const sec = Math.floor(ms / 1000);
   const days = Math.floor(sec / 86400);
   const hours = Math.floor((sec % 86400) / 3600);
   const mins = Math.floor((sec % 3600) / 60);
@@ -300,7 +300,7 @@ function getCountdownParts(ms){
   return { state: 'running', days, hours, mins, secs };
 }
 
-function renderCountdownHTML(parts){
+function renderCountdownHTML(parts) {
   if (parts.state === 'live') return `<div class="live">Đang diễn ra!</div>`;
   return `
     <div class="cd-box"><div class="cd-num">${parts.days}</div><div class="cd-lbl">ngày</div></div>
@@ -310,9 +310,9 @@ function renderCountdownHTML(parts){
   `;
 }
 
-function pad(n){ return String(n).padStart(2,'0'); }
+function pad(n) { return String(n).padStart(2, '0'); }
 
-function startTimer(){
+function startTimer() {
   if (intervalRef) clearInterval(intervalRef);
 
   intervalRef = setInterval(() => {
@@ -332,7 +332,16 @@ function startTimer(){
         if (window.Effects && typeof window.Effects.maybeCelebrate === "function") {
           window.Effects.maybeCelebrate(ev, now, {
             soundUrl: "assets/sfx/celebrate.wav",
-            volume: 0.9
+            volume: 0.9,
+            onCelebrate: (eventId) => {
+              // Add celebration class to the card
+              const card = document.getElementById('t_' + eventId)?.closest('.card');
+              if (card) {
+                card.classList.add('celebrating');
+                // Optional: remove after 10s
+                setTimeout(() => card.classList.remove('celebrating'), 10000);
+              }
+            }
           });
         }
       } catch (err) {
@@ -343,34 +352,34 @@ function startTimer(){
   }, 1000);
 }
 
-function formatDateLabel(ev){
+function formatDateLabel(ev) {
   if (!ev.date) return 'Chưa có ngày dương lịch';
 
   const target = getCountdownTarget(ev);
-  const opt = { weekday: 'short', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' };
-  try{
+  const opt = { weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+  try {
     return 'Mốc: ' + target.toLocaleString('vi-VN', opt);
-  }catch(e){
+  } catch (e) {
     return 'Mốc: ' + target.toLocaleString();
   }
 }
 
-function removeEvent(id){
-  const ev = events.find(e=>e.id===id);
+function removeEvent(id) {
+  const ev = events.find(e => e.id === id);
   if (!ev) return;
   if (!confirm(`Bạn có muốn xóa: "${ev.name}"?`)) return;
-  events = events.filter(e=>e.id !== id);
+  events = events.filter(e => e.id !== id);
   save();
   renderAll();
 }
 
-function editEvent(id){
-  const ev = events.find(e=>e.id===id);
+function editEvent(id) {
+  const ev = events.find(e => e.id === id);
   if (!ev) return;
   openModal(ev);
 }
 
-function openModal(ev){
+function openModal(ev) {
   const modal = document.getElementById('modal');
   modal.classList.remove('hidden');
 
@@ -379,36 +388,36 @@ function openModal(ev){
   document.getElementById('evYearly').checked = !!ev.yearly;
 
   modal.dataset.editId = ev.id || '';
-  setTimeout(()=> document.getElementById('evName').focus(), 30);
+  setTimeout(() => document.getElementById('evName').focus(), 30);
 }
 
-function closeModal(){
+function closeModal() {
   const modal = document.getElementById('modal');
   if (modal.classList.contains('hidden')) return;
   modal.classList.add('hidden');
   modal.dataset.editId = '';
 }
 
-function toLocalInput(date){
-  const pad2 = n=>String(n).padStart(2,'0');
-  return `${date.getFullYear()}-${pad2(date.getMonth()+1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+function toLocalInput(date) {
+  const pad2 = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}T${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
-function saveFromModal(){
+function saveFromModal() {
   const modal = document.getElementById('modal');
   const id = modal.dataset.editId || '';
   const name = (document.getElementById('evName').value || '').trim() || 'Untitled';
   const datev = document.getElementById('evDate').value;
   const yearly = document.getElementById('evYearly').checked;
 
-  if (!datev){
+  if (!datev) {
     if (!confirm('Bạn chưa chọn ngày dương lịch. Lưu không có ngày?')) return;
   }
 
   const iso = datev ? new Date(datev).toISOString() : '';
 
-  if (id){
-    events = events.map(e => e.id === id ? ({...e, name, date: iso, yearly}) : e);
+  if (id) {
+    events = events.map(e => e.id === id ? ({ ...e, name, date: iso, yearly }) : e);
   } else {
     events.push({ id: 'ev_' + Date.now(), name, date: iso, yearly });
   }
@@ -418,8 +427,8 @@ function saveFromModal(){
   closeModal();
 }
 
-function exportJSON(){
-  const blob = new Blob([JSON.stringify(events, null, 2)], {type:'application/json'});
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(events, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -428,14 +437,14 @@ function exportJSON(){
   URL.revokeObjectURL(url);
 }
 
-function importJSONFile(file){
+function importJSONFile(file) {
   const reader = new FileReader();
-  reader.onload = e=>{
+  reader.onload = e => {
     try {
       const parsed = JSON.parse(e.target.result);
       if (!Array.isArray(parsed)) throw new Error('Định dạng JSON phải là mảng (array).');
 
-      parsed.forEach((p, idx)=>{
+      parsed.forEach((p, idx) => {
         if (!p.id) p.id = 'ev_imp_' + Date.now() + '_' + idx;
         if (typeof p.name !== 'string') p.name = String(p.name || 'Untitled');
         if (typeof p.yearly !== 'boolean') p.yearly = !!p.yearly;
@@ -446,7 +455,7 @@ function importJSONFile(file){
       save();
       renderAll();
       alert('Đã nhập ' + parsed.length + ' mục.');
-    } catch(err){
+    } catch (err) {
       alert('Lỗi khi nhập JSON: ' + err.message);
     }
   };

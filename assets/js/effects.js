@@ -1,16 +1,10 @@
-/* effects.js - Fireworks + Sound helper (no dependencies)
-Usage:
-  1) Put this file in repo (e.g. assets/js/effects.js)
-  2) Include BEFORE script.js:
-     <script src="assets/js/effects.js" defer></script>
-  3) In script.js timer loop call:
-     Effects.maybeCelebrate(ev, Date.now(), { soundUrl: "assets/sfx/celebrate.wav" });
-*/
+/* effects.js - Advanced Fireworks + Musical Synth */
 (() => {
-  const CELEBRATION_WINDOW_MS = 9000;
+  const CELEBRATION_WINDOW_MS = 12000;
   const celebrated = new Set();
   let audioUnlocked = false;
 
+  // --- Audio Logic ---
   function unlockAudio(url){
     if (audioUnlocked) return;
     try{
@@ -23,6 +17,45 @@ Usage:
     }catch(e){}
   }
 
+  function playSound(url, opts = {}){
+    try{
+      const a = new Audio(url);
+      a.volume = (typeof opts.volume === "number") ? opts.volume : 0.9;
+      if (!audioUnlocked) unlockAudio(url);
+      a.play().catch(() => playVictoryTune());
+    }catch(e){ playVictoryTune(); }
+  }
+
+  // A simple victory melody using Web Audio OSC
+  function playVictoryTune(){
+    try{
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      
+      const playTone = (freq, start, duration, type='sine') => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.1, start);
+        g.gain.exponentialRampToValueAtTime(0.001, start + duration - 0.05);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(start); o.stop(start + duration);
+      };
+
+      const now = ctx.currentTime;
+      // Melody: C5, E5, G5, C6 (Arpeggio)
+      playTone(523.25, now, 0.2);       // C5
+      playTone(659.25, now + 0.15, 0.2); // E5
+      playTone(783.99, now + 0.30, 0.2); // G5
+      playTone(1046.50, now + 0.45, 0.6, 'triangle'); // C6
+      
+      setTimeout(()=> ctx.close?.().catch(()=>{}), 2000);
+    }catch(e){}
+  }
+
+  // --- Date Logic ---
   function getOccurrenceEndTimeMs(ev, nowMs){
     if (!ev?.date) return null;
     const base = new Date(ev.date);
@@ -36,60 +69,39 @@ Usage:
     return base.getTime();
   }
 
+  // --- Main Trigger ---
   function maybeCelebrate(ev, nowMs, opts = {}){
     const soundUrl = opts.soundUrl || "assets/sfx/celebrate.wav";
     const endMs = getOccurrenceEndTimeMs(ev, nowMs);
     if (endMs == null) return;
 
     const diff = nowMs - endMs;
+    // Celebrate if within window AFTER end date
     if (diff < 0 || diff > CELEBRATION_WINDOW_MS) return;
 
+    // Trigger per occurrence
     const key = `${ev.id}:${endMs}`;
     if (celebrated.has(key)) return;
     celebrated.add(key);
 
     launchFireworks(opts);
     playSound(soundUrl, opts);
+
+    // Call callback for UI animation if provided
+    if (typeof opts.onCelebrate === 'function') {
+      opts.onCelebrate(ev.id);
+    }
   }
 
-  function playSound(url, opts = {}){
-    try{
-      const a = new Audio(url);
-      a.volume = (typeof opts.volume === "number") ? opts.volume : 0.9;
-      if (!audioUnlocked) unlockAudio(url);
-      a.play().catch(() => beep());
-    }catch(e){ beep(); }
-  }
-
-  function beep(){
-    try{
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const pop = (t, f1, f2) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = "triangle";
-        o.frequency.setValueAtTime(f1, t);
-        o.frequency.exponentialRampToValueAtTime(f2, t + 0.14);
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
-        o.connect(g); g.connect(ctx.destination);
-        o.start(t); o.stop(t + 0.18);
-      };
-      const t = ctx.currentTime;
-      pop(t, 880, 220); pop(t+0.14, 990, 250); pop(t+0.28, 740, 210);
-      setTimeout(()=> ctx.close?.().catch(()=>{}), 800);
-    }catch(e){}
-  }
-
+  // --- Physics Particle System ---
   function launchFireworks(opts = {}){
-    const durationMs = typeof opts.durationMs === "number" ? opts.durationMs : 2600;
+    const durationMs = opts.durationMs || 4000;
+    
     let canvas = document.getElementById("fwCanvas");
     if (!canvas){
       canvas = document.createElement("canvas");
       canvas.id = "fwCanvas";
+      // Fullscreen, top-most, click-through
       Object.assign(canvas.style, {
         position: "fixed", inset: "0", width: "100%", height: "100%",
         pointerEvents: "none", zIndex: "9999"
@@ -98,75 +110,104 @@ Usage:
     }
 
     const ctx = canvas.getContext("2d");
-    const colors = opts.colors || ["#ffcc66","#72baff","#ff6b6b","#7CFFCB","#c4b5fd","#fca5a5"];
-    const particles = [];
+    let particles = [];
     let raf = null;
+    
+    // Vibrant colors
+    const colors = ["#fbbf24", "#f472b6", "#60a5fa", "#34d399", "#a78bfa", "#f87171", "#ffffff"];
 
     const resize = () => {
-      const dpr = Math.max(1, window.devicePixelRatio || 1);
-      canvas.width = Math.floor(window.innerWidth * dpr);
-      canvas.height = Math.floor(window.innerHeight * dpr);
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
 
-    const burst = (x, y) => {
-      const count = 92;
-      for (let i=0;i<count;i++){
-        const a = Math.random() * Math.PI * 2;
-        const sp = Math.random() * 6 + 2;
+    // Create a firework explosion
+    const createExplosion = (x, y) => {
+      const particleCount = 80 + Math.random() * 50;
+      for (let i = 0; i < particleCount; i++) {
+        const speed = Math.random() * 5 + 2;
+        const angle = Math.random() * Math.PI * 2;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        
         particles.push({
-          x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (Math.random()*2),
-          life: 0, ttl: 55 + Math.random() * 40,
-          size: 1.2 + Math.random() * 2.2,
-          color: colors[(Math.random()*colors.length)|0]
+          x: x, y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1.0,
+          decay: 0.01 + Math.random() * 0.015,
+          color: color,
+          gravity: 0.08,
+          size: Math.random() * 3 + 1
         });
       }
     };
 
-    for (let b=0; b<4; b++){
-      burst(
-        window.innerWidth * (0.2 + Math.random()*0.6),
-        window.innerHeight * (0.16 + Math.random()*0.35)
-      );
-    }
+    // Initial bursts
+    createExplosion(window.innerWidth * 0.5, window.innerHeight * 0.4);
+    setTimeout(() => createExplosion(window.innerWidth * 0.3, window.innerHeight * 0.3), 400);
+    setTimeout(() => createExplosion(window.innerWidth * 0.7, window.innerHeight * 0.3), 800);
+    setTimeout(() => createExplosion(window.innerWidth * 0.5, window.innerHeight * 0.2), 1200);
 
-    const start = performance.now();
-    const draw = (now) => {
-      const t = now - start;
-      ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+    const startTime = performance.now();
 
-      for (let i = particles.length - 1; i >= 0; i--){
+    const loop = (now) => {
+      const elapsed = now - startTime;
+      ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); // clear frame
+      
+      // Update & Draw particles
+      for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.life++;
-        p.x += p.vx; p.y += p.vy;
-        p.vy += 0.10; p.vx *= 0.985; p.vy *= 0.985;
+        
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity; // Gravity
+        p.vx *= 0.96; // Friction
+        p.vy *= 0.96;
+        p.life -= p.decay;
+        p.size *= 0.98;
 
-        const alpha = Math.max(0, 1 - p.life / p.ttl);
-        ctx.globalAlpha = alpha;
+        if (p.life <= 0 || p.size < 0.1) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.globalAlpha = p.life;
         ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, p.size*2, p.size*2);
-
-        if (p.life >= p.ttl) particles.splice(i, 1);
+        
+        // Draw circle
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Optional: Draw simple trail
+        // ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        // ctx.fillRect(p.x - p.vx, p.y - p.vy, 2, 2); 
       }
       ctx.globalAlpha = 1;
 
-      if (t < durationMs && particles.length){
-        raf = requestAnimationFrame(draw);
+      if (elapsed < durationMs || particles.length > 0) {
+        raf = requestAnimationFrame(loop);
       } else {
-        ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
-        if (raf) cancelAnimationFrame(raf);
+        // Cleanup
+        ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
       }
     };
 
-    raf = requestAnimationFrame(draw);
+    raf = requestAnimationFrame(loop);
 
+    // Auto-resize handler
     const onResize = () => resize();
-    window.addEventListener("resize", onResize);
-    setTimeout(()=> window.removeEventListener("resize", onResize), durationMs + 350);
+    window.addEventListener("resize", onResize, { passive: true });
+    // Remove listener after animation
+    setTimeout(() => window.removeEventListener("resize", onResize), durationMs + 1000);
   }
 
+  // Pre-unlock audio on user interaction
   window.addEventListener("pointerdown", () => unlockAudio("assets/sfx/celebrate.wav"), { once: true });
 
-  window.Effects = { maybeCelebrate, launchFireworks, playSound, unlockAudio };
+  // Export
+  window.Effects = { maybeCelebrate, launchFireworks, playSound };
 })();

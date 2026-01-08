@@ -1,18 +1,24 @@
 <!doctype html>
 <html lang="vi">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="color-scheme" content="dark light" />
   <title>Countdown Dh.wyxc</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="assets/styles/styles.css">
   <!-- Favicons -->
   <link rel="icon" href="assets/favicon/favicon.ico" sizes="any">
   <link rel="icon" href="assets/favicon/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/favicon/apple-touch-icon.png">
   <link rel="manifest" href="assets/favicon/site.webmanifest">
-  <meta name="theme-color" content="#0b1020">
+  <meta name="theme-color" content="#0f172a">
 </head>
+
 <body>
   <div class="app">
     <header class="topbar">
@@ -57,7 +63,8 @@
 
       <footer class="footer">
         <p class="note">
-          Lưu ý: Những ngày theo <b>âm lịch</b> (Tết Nguyên Đán, Giỗ Tổ Hùng Vương...) cần chọn ngày <b>dương lịch tương ứng</b> cho năm bạn muốn đếm ngược.
+          Lưu ý: Những ngày theo <b>âm lịch</b> (Tết Nguyên Đán, Giỗ Tổ Hùng Vương...) cần chọn ngày <b>dương lịch tương
+            ứng</b> cho năm bạn muốn đếm ngược.
         </p>
         <p class="hint">
           Mẹo: bạn có thể xuất/nhập JSON để backup hoặc chuyển danh sách qua thiết bị khác.
@@ -100,30 +107,31 @@
       </div>
     </div>
   </div>
-<!-- Card Zoom (tap card to fullscreen) -->
-<div id="zoom" class="zoom hidden" role="dialog" aria-modal="true" aria-label="Xem lớn">
-  <div class="zoom-backdrop" data-zoom-close="1"></div>
+  <!-- Card Zoom (tap card to fullscreen) -->
+  <div id="zoom" class="zoom hidden" role="dialog" aria-modal="true" aria-label="Xem lớn">
+    <div class="zoom-backdrop" data-zoom-close="1"></div>
 
-  <div class="zoom-sheet" role="document">
-    <div class="zoom-top">
-      <div>
-        <div class="zoom-title" id="zoomTitle">Sự kiện</div>
-        <div class="zoom-meta" id="zoomMeta"></div>
+    <div class="zoom-sheet" role="document">
+      <div class="zoom-top">
+        <div>
+          <div class="zoom-title" id="zoomTitle">Sự kiện</div>
+          <div class="zoom-meta" id="zoomMeta"></div>
+        </div>
+        <button class="icon-btn" id="zoomClose" aria-label="Đóng">✕</button>
       </div>
-      <button class="icon-btn" id="zoomClose" aria-label="Đóng">✕</button>
-    </div>
 
-    <div class="zoom-body">
-      <div class="countdown zoom-countdown" id="zoomCountdown"></div>
-      <div class="zoom-note" id="zoomNote" style="display:none"></div>
-      <div class="zoom-hint"></div>
+      <div class="zoom-body">
+        <div class="countdown zoom-countdown" id="zoomCountdown"></div>
+        <div class="zoom-note" id="zoomNote" style="display:none"></div>
+        <div class="zoom-hint"></div>
+      </div>
     </div>
   </div>
-</div>
 
 
-<script src="assets/js/effects.js" defer></script>
-<script src="script.js" defer></script>
+  <script src="assets/js/effects.js" defer></script>
+  <script src="script.js" defer></script>
 
 </body>
+
 </html>
