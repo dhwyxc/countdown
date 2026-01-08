@@ -225,6 +225,11 @@ p {
   padding-left: 4px;
 }
 
+/* Áp dụng cho danh sách option khi mở dropdown */
+#presetSelect option {
+  color: #000;
+}
+
 input,
 select {
   width: 100%;
