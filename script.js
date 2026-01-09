@@ -28,7 +28,7 @@
     currentId = srcCountdown?.id?.startsWith('t_') ? srcCountdown.id.slice(2) : null;
 
     zoomTitle.textContent = titleEl ? titleEl.textContent.trim() : 'Sự kiện';
-    zoomMeta.textContent = metaEl ? metaEl.textContent.trim() : '';
+    zoomMeta.innerHTML = metaEl ? metaEl.innerHTML : '';
 
     if (noteEl && noteEl.textContent.trim()) {
       zoomNote.textContent = noteEl.textContent.trim();
