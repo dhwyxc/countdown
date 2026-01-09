@@ -26,7 +26,10 @@
         <div class="logo" aria-hidden="true">⏳</div>
         <div class="brand-text">
           <h1>COUNTDOWN DH.WYXC</h1>
-          <p class="subtitle">dh.wyxc</p>
+          <div class="subtitle-time">
+            <div id="solarClock">--:--:--</div>
+            <div id="lunarDate">--/-- Âm lịch</div>
+          </div>
         </div>
       </div>
 
@@ -54,6 +57,10 @@
           <button id="btnExport" class="btn ghost">Xuất JSON</button>
           <button id="btnImport" class="btn ghost">Nhập JSON</button>
           <input type="file" id="fileInput" accept="application/json" hidden>
+          <div class="field-check-inline">
+            <input type="checkbox" id="showLunarToggle" class="sr-only">
+            <label for="showLunarToggle" class="btn ghost">Âm lịch</label>
+          </div>
         </div>
       </section>
 
@@ -129,6 +136,7 @@
   </div>
 
 
+  <script src="assets/js/lunar.js"></script>
   <script src="assets/js/effects.js" defer></script>
   <script src="script.js" defer></script>
 

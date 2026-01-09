@@ -92,9 +92,11 @@ const DEFAULT_EVENTS = [
 ];
 
 const STORAGE_KEY = 'vn_countdown_events_v2';
+const STORAGE_OPTS_KEY = 'vn_countdown_opts';
 let events = [];
 let intervalRef = null;
 let searchTerm = '';
+let showLunar = false;
 
 function load() {
   try {
@@ -107,6 +109,13 @@ function load() {
       else events = DEFAULT_EVENTS;
       save();
     }
+
+    // Load options
+    const opts = localStorage.getItem(STORAGE_OPTS_KEY);
+    if (opts) {
+      const parsedOpts = JSON.parse(opts);
+      showLunar = !!parsedOpts.showLunar;
+    }
   } catch (e) { events = DEFAULT_EVENTS; save(); }
 
   ensureIds();
@@ -114,6 +123,8 @@ function load() {
   attachUI();
   renderAll();
   startTimer();
+  setInterval(updateHeaderClock, 1000);
+  updateHeaderClock();
 }
 
 function ensureIds() {
@@ -131,6 +142,16 @@ function attachUI() {
   document.getElementById('btnExport').addEventListener('click', exportJSON);
   document.getElementById('btnImport').addEventListener('click', () => document.getElementById('fileInput').click());
   document.getElementById('fileInput').addEventListener('change', (e) => { if (e.target.files.length) importJSONFile(e.target.files[0]); });
+
+  const lunarToggle = document.getElementById('showLunarToggle');
+  if (lunarToggle) {
+    lunarToggle.checked = showLunar;
+    lunarToggle.addEventListener('change', (e) => {
+      showLunar = e.target.checked;
+      localStorage.setItem(STORAGE_OPTS_KEY, JSON.stringify({ showLunar }));
+      renderAll();
+    });
+  }
 
   document.getElementById('xBtn').addEventListener('click', closeModal);
   document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
@@ -237,6 +258,18 @@ function renderAll() {
     dateText.title = ev.date ? new Date(ev.date).toString() : '';
     dateText.textContent = formatDateLabel(ev);
 
+    if (showLunar && window.LunarCalendar) {
+      const target = getCountdownTarget(ev);
+      const solar = new window.LunarCalendar.SolarDate(target);
+      const lunar = solar.toLunarDate();
+      const lunarDiv = document.createElement('div');
+      lunarDiv.className = 'lunar-sub';
+      lunarDiv.style.opacity = '0.75';
+      lunarDiv.style.fontSize = '0.9em';
+      lunarDiv.textContent = `Âm lịch: ${lunar.day}/${lunar.month} ${lunar.getYearName()}`;
+      dateText.appendChild(lunarDiv);
+    }
+
     const actions = document.createElement('div');
     actions.className = 'card-actions';
 
@@ -318,6 +351,8 @@ function startTimer() {
   intervalRef = setInterval(() => {
     const now = Date.now();
 
+    let shouldTick = false;
+
     for (const ev of events) {
       try {
         const el = document.getElementById('t_' + ev.id);
@@ -325,8 +360,14 @@ function startTimer() {
         // QUAN TRỌNG: thiếu element thì bỏ qua event đó, KHÔNG return
         if (!el) continue;
 
-        const parts = getCountdownParts(getCountdownTarget(ev).getTime() - now);
+        const diff = getCountdownTarget(ev).getTime() - now;
+        const parts = getCountdownParts(diff);
         el.innerHTML = renderCountdownHTML(parts);
+
+        // Check for ticking sound condition (0 < remaining <= 15s)
+        if (diff > 0 && diff <= 15000) {
+          shouldTick = true;
+        }
 
         // an toàn: chỉ gọi nếu Effects tồn tại
         if (window.Effects && typeof window.Effects.maybeCelebrate === "function") {
@@ -348,6 +389,11 @@ function startTimer() {
         console.warn("Update countdown error:", ev?.name, err);
         // không làm gì thêm để các card khác vẫn chạy
       }
+    }
+
+    // Play tick if at least one event is in the final minute
+    if (shouldTick && window.Effects && typeof window.Effects.playTick === "function") {
+      window.Effects.playTick();
     }
   }, 1000);
 }
@@ -463,3 +509,27 @@ function importJSONFile(file) {
 }
 
 document.addEventListener('DOMContentLoaded', load);
+
+function updateHeaderClock() {
+  const now = new Date();
+  const solarEl = document.getElementById('solarClock');
+  const lunarEl = document.getElementById('lunarDate');
+
+  if (solarEl) {
+    // Format: "Thứ Sáu, 09/01/2026 - 15:30:45"
+    const time = now.toLocaleTimeString('vi-VN', { hour12: false });
+    const date = now.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+    solarEl.textContent = `${date} • ${time}`;
+  }
+
+  if (lunarEl && window.LunarCalendar && window.LunarCalendar.SolarDate) {
+    try {
+      const solar = new window.LunarCalendar.SolarDate(now);
+      const lunar = solar.toLunarDate();
+      // Format: "21/11 Ất Tỵ (Tháng Chạp)"
+      const dayName = lunar.getDayName(); // Can Chi ngày
+      const monthName = lunar.getMonthName(); // Can chi tháng
+      lunarEl.textContent = `${lunar.day}/${lunar.month}/${lunar.year} ${lunar.getYearName()}`;
+    } catch (e) { console.error(e); }
+  }
+}

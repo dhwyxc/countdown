@@ -5,35 +5,35 @@
   let audioUnlocked = false;
 
   // --- Audio Logic ---
-  function unlockAudio(url){
+  function unlockAudio(url) {
     if (audioUnlocked) return;
-    try{
+    try {
       const a = new Audio(url);
       a.muted = true;
-      a.play().then(()=>{
+      a.play().then(() => {
         a.pause(); a.currentTime = 0; a.muted = false;
         audioUnlocked = true;
-      }).catch(()=>{});
-    }catch(e){}
+      }).catch(() => { });
+    } catch (e) { }
   }
 
-  function playSound(url, opts = {}){
-    try{
+  function playSound(url, opts = {}) {
+    try {
       const a = new Audio(url);
       a.volume = (typeof opts.volume === "number") ? opts.volume : 0.9;
       if (!audioUnlocked) unlockAudio(url);
       a.play().catch(() => playVictoryTune());
-    }catch(e){ playVictoryTune(); }
+    } catch (e) { playVictoryTune(); }
   }
 
   // A simple victory melody using Web Audio OSC
-  function playVictoryTune(){
-    try{
+  function playVictoryTune() {
+    try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      
-      const playTone = (freq, start, duration, type='sine') => {
+
+      const playTone = (freq, start, duration, type = 'sine') => {
         const o = ctx.createOscillator();
         const g = ctx.createGain();
         o.type = type;
@@ -50,17 +50,17 @@
       playTone(659.25, now + 0.15, 0.2); // E5
       playTone(783.99, now + 0.30, 0.2); // G5
       playTone(1046.50, now + 0.45, 0.6, 'triangle'); // C6
-      
-      setTimeout(()=> ctx.close?.().catch(()=>{}), 2000);
-    }catch(e){}
+
+      setTimeout(() => ctx.close?.().catch(() => { }), 2000);
+    } catch (e) { }
   }
 
   // --- Date Logic ---
-  function getOccurrenceEndTimeMs(ev, nowMs){
+  function getOccurrenceEndTimeMs(ev, nowMs) {
     if (!ev?.date) return null;
     const base = new Date(ev.date);
     if (Number.isNaN(base.getTime())) return null;
-    if (ev.yearly){
+    if (ev.yearly) {
       const now = new Date(nowMs);
       const d = new Date(base);
       d.setFullYear(now.getFullYear());
@@ -70,7 +70,7 @@
   }
 
   // --- Main Trigger ---
-  function maybeCelebrate(ev, nowMs, opts = {}){
+  function maybeCelebrate(ev, nowMs, opts = {}) {
     const soundUrl = opts.soundUrl || "assets/sfx/celebrate.wav";
     const endMs = getOccurrenceEndTimeMs(ev, nowMs);
     if (endMs == null) return;
@@ -94,11 +94,11 @@
   }
 
   // --- Physics Particle System ---
-  function launchFireworks(opts = {}){
+  function launchFireworks(opts = {}) {
     const durationMs = opts.durationMs || 4000;
-    
+
     let canvas = document.getElementById("fwCanvas");
-    if (!canvas){
+    if (!canvas) {
       canvas = document.createElement("canvas");
       canvas.id = "fwCanvas";
       // Fullscreen, top-most, click-through
@@ -112,7 +112,7 @@
     const ctx = canvas.getContext("2d");
     let particles = [];
     let raf = null;
-    
+
     // Vibrant colors
     const colors = ["#fbbf24", "#f472b6", "#60a5fa", "#34d399", "#a78bfa", "#f87171", "#ffffff"];
 
@@ -131,7 +131,7 @@
         const speed = Math.random() * 5 + 2;
         const angle = Math.random() * Math.PI * 2;
         const color = colors[Math.floor(Math.random() * colors.length)];
-        
+
         particles.push({
           x: x, y: y,
           vx: Math.cos(angle) * speed,
@@ -156,11 +156,11 @@
     const loop = (now) => {
       const elapsed = now - startTime;
       ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); // clear frame
-      
+
       // Update & Draw particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        
+
         p.x += p.vx;
         p.y += p.vy;
         p.vy += p.gravity; // Gravity
@@ -176,12 +176,12 @@
 
         ctx.globalAlpha = p.life;
         ctx.fillStyle = p.color;
-        
+
         // Draw circle
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
-        
+
         // Optional: Draw simple trail
         // ctx.fillStyle = 'rgba(255,255,255,0.2)';
         // ctx.fillRect(p.x - p.vx, p.y - p.vy, 2, 2); 
@@ -209,5 +209,37 @@
   window.addEventListener("pointerdown", () => unlockAudio("assets/sfx/celebrate.wav"), { once: true });
 
   // Export
-  window.Effects = { maybeCelebrate, launchFireworks, playSound };
+  // --- Tick Sound ---
+  function playTick() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const t = ctx.currentTime;
+
+      // Create a short, high-pitched "tick"
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1000, t);
+      osc.frequency.exponentialRampToValueAtTime(100, t + 0.05); // quick drop
+
+      gain.gain.setValueAtTime(0.5, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(t);
+      osc.stop(t + 0.05);
+
+      // Cleanup to prevent memory leaks from many contexts
+      setTimeout(() => ctx.close(), 100);
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  window.Effects = { maybeCelebrate, launchFireworks, playSound, playTick };
 })();
