@@ -102,10 +102,22 @@
           <div class="help">Chọn đúng ngày dương lịch (ví dụ 2026-02-...)</div>
         </div>
 
-        <label class="check">
-          <input id="evYearly" type="checkbox">
-          <span>Lặp lại hàng năm</span>
-        </label>
+        <div class="field">
+          <label for="evRepeat">Lặp lại</label>
+          <select id="evRepeat">
+            <option value="none">Không lặp lại</option>
+            <option value="yearly">Hàng năm</option>
+            <option value="lunar">Âm lịch hàng năm</option>
+            <option value="monthly">Hàng tháng</option>
+            <option value="weekly">Hàng tuần</option>
+            <option value="custom_days">Mỗi … ngày</option>
+          </select>
+        </div>
+
+        <div class="field hidden" id="divCustomDays">
+          <label for="evCustomDays">Số ngày lặp lại</label>
+          <input id="evCustomDays" type="number" min="1" value="100">
+        </div>
       </div>
 
       <div class="modal-actions">

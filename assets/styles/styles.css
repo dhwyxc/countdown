@@ -230,6 +230,10 @@ p {
   color: #000;
 }
 
+#evRepeat option {
+  color: #000;
+}
+
 input,
 select {
   width: 100%;

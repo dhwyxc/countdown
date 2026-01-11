@@ -83,12 +83,12 @@
 })();
 
 const DEFAULT_EVENTS = [
-  { id: 'ny', name: "Tết Nguyên Đán (hãy nhập ngày dương lịch)", date: "", yearly: true, note: "Ngày theo âm lịch — hãy nhập ngày dương lịch chính xác cho năm bạn cần." },
-  { id: 'newyear', name: "Tết Dương Lịch", date: "2026-01-01T00:00:00Z", yearly: true },
-  { id: 'womenday', name: "Quốc tế Phụ nữ", date: "2026-03-08T00:00:00Z", yearly: true },
-  { id: 'reunify', name: "Ngày Giải phóng miền Nam / 30-4", date: "2026-04-30T00:00:00Z", yearly: true },
-  { id: 'labor', name: "Quốc tế Lao động / 1-5", date: "2026-05-01T00:00:00Z", yearly: true },
-  { id: 'natday', name: "Quốc khánh / 2-9", date: "2026-09-02T00:00:00Z", yearly: true }
+  { id: 'ny', name: "Tết Nguyên Đán 2026", date: "2026-02-17T00:00:00.000Z", repeat: 'lunar', note: "Tự động tính theo Âm lịch" },
+  { id: 'newyear', name: "Tết Dương Lịch", date: "2026-01-01T00:00:00.000Z", repeat: 'yearly' },
+  { id: 'womenday', name: "Quốc tế Phụ nữ", date: "2026-03-08T00:00:00.000Z", repeat: 'yearly' },
+  { id: 'reunify', name: "Ngày Giải phóng miền Nam / 30-4", date: "2026-04-30T00:00:00.000Z", repeat: 'yearly' },
+  { id: 'labor', name: "Quốc tế Lao động / 1-5", date: "2026-05-01T00:00:00.000Z", repeat: 'yearly' },
+  { id: 'natday', name: "Quốc khánh / 2-9", date: "2026-09-02T00:00:00.000Z", repeat: 'yearly' }
 ];
 
 const STORAGE_KEY = 'vn_countdown_events_v2';
@@ -156,6 +156,14 @@ function attachUI() {
   document.getElementById('xBtn').addEventListener('click', closeModal);
   document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
 
+  // Toggle Custom Days input
+  const repeatSel = document.getElementById('evRepeat');
+  const divCustom = document.getElementById('divCustomDays');
+  repeatSel.addEventListener('change', () => {
+    if (repeatSel.value === 'custom_days') divCustom.classList.remove('hidden');
+    else divCustom.classList.add('hidden');
+  });
+
   const search = document.getElementById('searchInput');
   search.addEventListener('input', () => {
     searchTerm = (search.value || '').trim().toLowerCase();
@@ -172,34 +180,34 @@ function populatePreset() {
   sel.innerHTML = '<option value="">Thêm nhanh ngày lễ…</option>';
 
   const presets = [
-    { name: 'Tết Nguyên Đán (nhập ngày dương lịch)', date: '' },
-    { name: 'Tết Dương Lịch — 01/01', date: '01-01' },
-    { name: 'Quốc tế Phụ nữ — 08/03', date: '03-08' },
-    { name: '30/4 — Giải phóng', date: '04-30' },
-    { name: '01/05 — Lao động', date: '05-01' },
-    { name: '02/09 — Quốc khánh', date: '09-02' }
+    { name: 'Tết Nguyên Đán', repeat: 'lunar', date: '2024-02-10T00:00:00' }, // Mốc Giáp Thìn
+    { name: 'Tết Dương Lịch — 01/01', repeat: 'yearly', date: '2026-01-01T00:00:00' },
+    { name: 'Quốc tế Phụ nữ — 08/03', repeat: 'yearly', date: '2026-03-08T00:00:00' },
+    { name: '30/4 — Giải phóng', repeat: 'yearly', date: '2026-04-30T00:00:00' },
+    { name: '01/05 — Lao động', repeat: 'yearly', date: '2026-05-01T00:00:00' },
+    { name: '02/09 — Quốc khánh', repeat: 'yearly', date: '2026-09-02T00:00:00' }
   ];
 
   presets.forEach(p => {
     const o = document.createElement('option');
-    o.value = p.date;
+    o.value = JSON.stringify(p);
     o.textContent = p.name;
     sel.appendChild(o);
   });
 
   sel.onchange = () => {
-    const val = sel.value;
-    if (!val) return;
-
-    if (val.length === 5) {
-      const now = new Date();
-      const next = new Date(now.getFullYear(), parseInt(val.slice(0, 2)) - 1, parseInt(val.slice(3, 5)), 0, 0, 0);
-      if (next <= now) next.setFullYear(next.getFullYear() + 1);
-      openModal({ name: sel.options[sel.selectedIndex].text, date: toLocalInput(next), yearly: true });
-    } else {
-      openModal({ name: 'Tết Nguyên Đán (nhập ngày dương lịch)', date: '', yearly: true });
-    }
-
+    if (!sel.value) return;
+    try {
+      const p = JSON.parse(sel.value);
+      // Nếu là ngày cụ thể (yearly), chỉnh lại năm cho hợp lý (next occurrence)
+      let d = new Date(p.date);
+      if (p.repeat === 'yearly') {
+        const now = new Date();
+        d.setFullYear(now.getFullYear());
+        if (d < now) d.setFullYear(now.getFullYear() + 1);
+      }
+      openModal({ name: p.name, date: toLocalInput(d), repeat: p.repeat });
+    } catch (e) { }
     sel.selectedIndex = 0;
   };
 }
@@ -228,7 +236,14 @@ function renderAll() {
 
     const badge = document.createElement('div');
     badge.className = 'badge';
-    badge.textContent = ev.yearly ? 'Lặp hàng năm' : 'Một lần';
+    let label = 'Một lần';
+    if (ev.repeat === 'yearly') label = 'Hàng năm';
+    else if (ev.repeat === 'monthly') label = 'Hàng tháng';
+    else if (ev.repeat === 'weekly') label = 'Hàng tuần';
+    else if (ev.repeat === 'lunar') label = 'Âm lịch';
+    else if (ev.repeat === 'custom_days') label = `Mỗi ${ev.repeatDays} ngày`;
+    else if (ev.yearly) label = 'Hàng năm'; // fallback
+    badge.textContent = label;
 
     head.appendChild(title);
     head.appendChild(badge);
@@ -309,15 +324,110 @@ function renderAll() {
 
 function getCountdownTarget(ev) {
   if (!ev.date) return new Date(Date.now() + 1000 * 60 * 60 * 24 * 365);
-  const d = new Date(ev.date);
+  let d = new Date(ev.date);
+  const now = new Date();
 
-  if (ev.yearly) {
-    const now = new Date();
+  // Backward compatibility
+  const repeat = ev.repeat || (ev.yearly ? 'yearly' : 'none');
+
+  if (repeat === 'none') {
+    return d;
+  }
+
+  if (repeat === 'yearly') {
     const candidate = new Date(d);
     candidate.setFullYear(now.getFullYear());
     if (candidate <= now) candidate.setFullYear(now.getFullYear() + 1);
     return candidate;
   }
+
+  if (repeat === 'monthly') {
+    // Jump to current month
+    const candidate = new Date(d);
+    candidate.setFullYear(now.getFullYear());
+    candidate.setMonth(now.getMonth());
+    // Safe date check (e.g. 31st) -> JS automatically rolls over if invalid, which is acceptable behavior for "monthly" usually,
+    // OR we can clamp. Let's stick to standard behavior: 31 Jan + 1 month -> 3 March (non-leap) or 2 March.
+    // Actually, user expects "same day". If today is 15th, target 10th -> next month 10th.
+    if (candidate <= now) {
+      candidate.setMonth(candidate.getMonth() + 1);
+    }
+    return candidate;
+  }
+
+  if (repeat === 'weekly') {
+    const candidate = new Date(d);
+    // Calculate difference in weeks
+    const diffMs = now.getTime() - candidate.getTime();
+    if (diffMs > 0) {
+      const weeks = Math.floor(diffMs / (7 * 86400000));
+      candidate.setTime(candidate.getTime() + (weeks * 7 * 86400000));
+      if (candidate <= now) candidate.setTime(candidate.getTime() + (7 * 86400000));
+    }
+    return candidate;
+  }
+
+  if (repeat === 'custom_days' && ev.repeatDays > 0) {
+    const interval = ev.repeatDays * 86400000;
+    const diff = now.getTime() - d.getTime();
+    if (diff > 0) {
+      const steps = Math.floor(diff / interval);
+      const candidate = new Date(d.getTime() + steps * interval);
+      if (candidate <= now) {
+        return new Date(candidate.getTime() + interval);
+      }
+      return candidate;
+    }
+    return d;
+  }
+
+  if (repeat === 'lunar' && window.LunarCalendar) {
+    // Convert source solar date to lunar
+    try {
+      const { SolarDate, LunarDate } = window.LunarCalendar;
+      const solarSrc = new SolarDate(d);
+      const lunarSrc = solarSrc.toLunarDate(); // { day, month, leap_month, ... }
+
+      // Check current lunar year and next
+      const nowSolar = new SolarDate(now);
+      const nowLunar = nowSolar.toLunarDate();
+
+      const checkYears = [nowLunar.year, nowLunar.year + 1];
+
+      for (const y of checkYears) {
+        // Construct target lunar date for this year
+        // finding the month in that year
+        const yearCode = LunarDate.getYearCode(y);
+        const lunarMonths = LunarDate.decodeLunarYear(y, yearCode);
+
+        // Find matching month
+        let targetMonth = lunarMonths.find(m =>
+          m.month === lunarSrc.month &&
+          m.leap_month === lunarSrc.leap_month
+        );
+
+        // If exact match (including leap) not found, fallback to non-leap or first occurrence
+        if (!targetMonth && lunarSrc.leap_month) {
+          // Updated fallback: try same month non-leap
+          targetMonth = lunarMonths.find(m => m.month === lunarSrc.month && !m.leap_month);
+        }
+
+        if (targetMonth) {
+          const daysInMonth = targetMonth.length; // length property from library
+          const targetDay = Math.min(lunarSrc.day, daysInMonth); // clamp
+
+          const jd = targetMonth.jd + targetDay - 1;
+          const targetSolar = SolarDate.fromJd(jd).toDate();
+
+          // Allow for today if hours allow, but simplest is > now
+          if (targetSolar > now) return targetSolar;
+        }
+      }
+    } catch (e) { console.error('Lunar calc error', e); }
+    // Fallback if error or not found
+    return d;
+  }
+
   return d;
 }
 
@@ -431,7 +541,19 @@ function openModal(ev) {
 
   document.getElementById('evName').value = ev.name || '';
   document.getElementById('evDate').value = ev.date ? toLocalInput(new Date(ev.date)) : (ev.date || '');
-  document.getElementById('evYearly').checked = !!ev.yearly;
+
+  // Repetition
+  const repeat = ev.repeat || (ev.yearly ? 'yearly' : 'none');
+  const repeatSel = document.getElementById('evRepeat');
+  repeatSel.value = repeat;
+
+  // Custom days
+  const divCustom = document.getElementById('divCustomDays');
+  const inpCustom = document.getElementById('evCustomDays');
+  inpCustom.value = ev.repeatDays || 100;
+
+  if (repeat === 'custom_days') divCustom.classList.remove('hidden');
+  else divCustom.classList.add('hidden');
 
   modal.dataset.editId = ev.id || '';
   setTimeout(() => document.getElementById('evName').focus(), 30);
@@ -454,7 +576,13 @@ function saveFromModal() {
   const id = modal.dataset.editId || '';
   const name = (document.getElementById('evName').value || '').trim() || 'Untitled';
   const datev = document.getElementById('evDate').value;
-  const yearly = document.getElementById('evYearly').checked;
+  const repeat = document.getElementById('evRepeat').value;
+  let repeatDays = parseInt(document.getElementById('evCustomDays').value);
+
+  if (repeat === 'custom_days' && (!repeatDays || repeatDays <= 0)) {
+    alert('Vui lòng nhập số ngày lặp lại hợp lệ (> 0).');
+    return;
+  }
 
   if (!datev) {
     if (!confirm('Bạn chưa chọn ngày dương lịch. Lưu không có ngày?')) return;
@@ -462,10 +590,19 @@ function saveFromModal() {
 
   const iso = datev ? new Date(datev).toISOString() : '';
 
+  const newEv = {
+    id: id || 'ev_' + Date.now(),
+    name,
+    date: iso,
+    repeat,
+    repeatDays: repeat === 'custom_days' ? repeatDays : undefined,
+    yearly: undefined // Clean up old field if exists
+  };
+
   if (id) {
-    events = events.map(e => e.id === id ? ({ ...e, name, date: iso, yearly }) : e);
+    events = events.map(e => e.id === id ? newEv : e);
   } else {
-    events.push({ id: 'ev_' + Date.now(), name, date: iso, yearly });
+    events.push(newEv);
   }
 
   save();
@@ -493,7 +630,11 @@ function importJSONFile(file) {
       parsed.forEach((p, idx) => {
         if (!p.id) p.id = 'ev_imp_' + Date.now() + '_' + idx;
         if (typeof p.name !== 'string') p.name = String(p.name || 'Untitled');
-        if (typeof p.yearly !== 'boolean') p.yearly = !!p.yearly;
+        if (typeof p.repeat !== 'string') {
+          // Migration
+          p.repeat = p.yearly ? 'yearly' : 'none';
+        }
+        delete p.yearly; // cleanup
         if (typeof p.date !== 'string') p.date = '';
       });
 
